@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Connect_Four
+namespace RandomAI.cs
 {
-    class RandomAI
+    class AI
     {
         private int player;
         private int ROW;
@@ -21,8 +19,8 @@ namespace Connect_Four
             // assignments
             this.board = arr;
             this.player = p;
-            boardColums = GameBoard.COLS;
-            boardRows = GameBoard.ROWS;
+            boardColums = gameComm.COL;
+            boardRows = gameComm.ROW;
             this.fullColumnsList = new bool[boardColums];
 
             // sees if any of the columns are full, thus cant play in them
@@ -60,7 +58,7 @@ namespace Connect_Four
             {
                 Random rnd = new Random();
                 c = rnd.Next(boardColums);
-                if(fullColumnsList[c] == false)
+                if (fullColumnsList[c] == false)
                 {
                     valid = true;
                 }
@@ -71,9 +69,9 @@ namespace Connect_Four
         // finds the bottom row to play in of the chosen column
         private int pickRow(int col)
         {
-            for(int i = boardRows - 1; i >= 0; i--)
+            for (int i = boardRows - 1; i >= 0; i--)
             {
-                if((board[i,col] != 1) && (board[i, col] != 2))
+                if ((board[i, col] != 1) && (board[i, col] != 2))
                 {
                     return i;
                 }

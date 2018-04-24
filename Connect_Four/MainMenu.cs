@@ -21,106 +21,43 @@ namespace Connect_Four
         {
 
         }
-        private void HumanVHuman_click(object sender, EventArgs e)
-        {
-            // user can choose a game size
-            size s = new size();
-            s.ShowDialog();
-            int game_size = size.SetTheSize;
-            int rows = getRows(game_size);
-            int cols = getCols(game_size);
-            s.Hide();
 
-            if (game_size != 0)
+        // play game is clicked on the main menu
+        private void playGame_click(object sender, EventArgs e)
+        {
+            // run the settings dialog
+            Settings s = new Settings();
+            s.ShowDialog();
+            // sets variables
+            string AI_ONE = "", AI_TWO = "";
+            int moveTime = s.TIME_LIMIT;
+            int gameSize = s.GAME_SIZE;
+            int playerOne = s.PLAYER_ONE_TYPE;
+            if (playerOne == 2)
             {
-                // make the gameboard and start playing
-                GameBoard game = new GameBoard(2, 0, 0, rows, cols);
-                if (game_size == 1)
+                AI_ONE = s.AI_ONE_PATH;
+            }
+            int playerTwo = s.PLAYER_TWO_TYPE;
+            if (playerTwo == 2)
+            {
+                AI_TWO = s.AI_TWO_PATH;
+            }
+            int rows = getRows(gameSize);
+            int cols = getCols(gameSize);
+            if (gameSize != -1 && moveTime != -1 && playerOne != -1 && playerTwo != -1)
+            {
+                //create the gameboard
+                GameBoard game = new GameBoard(playerOne, playerTwo, AI_ONE, AI_TWO, rows, cols, moveTime);
+                if (gameSize == 1)
                     game.Size = new Size(600, 450);
-                else if (game_size == 3)
+                else if (gameSize == 3)
                     game.Size = new Size(1200, 900);
                 game.Show();
                 this.Hide();
             }
         }
 
-        private void HumanVComp_click(object sender, EventArgs e)
-        {
-            // user chooses computer difficulty
-            difficulty d = new difficulty();
-            d.ShowDialog();
-            int game_difficulty = difficulty.SetTheDifficulty;
-
-
-            // user can choose a game size
-            size s = new size();
-            s.ShowDialog();
-            int game_size = size.SetTheSize;
-            int rows = getRows(game_size);
-            int cols = getCols(game_size);
-            s.Hide();
-
-            // if the menus weren't closed
-            if (game_size != 0 && game_difficulty != 0)
-            {
-                // make the gameboard and start playing
-                GameBoard game = new GameBoard(1, game_difficulty, 0, rows, cols);
-                if (game_size == 1)
-                    game.Size = new Size(600, 450);
-                else if (game_size == 3)
-                    game.Size = new Size(1200, 900);
-                game.Show();
-                this.Hide();
-            }
-        }
-
-        private void CompVComp_click(object sender, EventArgs e)
-        {
-            int AIone_diff = 0;
-            int AItwo_diff = 0;
-
-            // user chooses computer AI #1 difficulty
-            difficulty AIone = new difficulty();
-            AIone.ShowDialog();
-            AIone_diff = difficulty.SetTheDifficulty;
-
-            // user chooses computer AI #2 difficulty
-            difficulty AItwo = new difficulty();
-            AItwo.ShowDialog();
-            AItwo_diff = difficulty.SetTheDifficulty;
-
-            // user can choose a game size
-            size s = new size();
-            s.ShowDialog();
-            int game_size = size.SetTheSize;
-            int rows = getRows(game_size);
-            int cols = getCols(game_size);
-            s.Hide();
-
-            // if the menus weren't closed
-            if (game_size != 0 && AIone_diff != 0 && AItwo_diff != 0)
-            {
-                // make the gameboard and start playing
-                GameBoard game = new GameBoard(0, AIone_diff, AItwo_diff, rows, cols);
-                if (game_size == 1)
-                    game.Size = new Size(600, 450);
-                else if (game_size == 3)
-                    game.Size = new Size(1200, 900);
-                game.Show();
-            }
-        }
-
-        private void Exit_click(object sender, EventArgs e)
-        {
-            Application.Exit();
-        }
-
-        private void MainMenu_FormClosing(object sender, FormClosingEventArgs e)
-        {
-
-            Application.Exit();
-        }
-
+        // gives an amount of rows based on the board size
         private int getRows(int gameSize)
         {
             if (gameSize == 1)
@@ -131,6 +68,7 @@ namespace Connect_Four
                 return 9;
         }
 
+        // gives an amount of cols based on the board size
         private int getCols(int gameSize)
         {
             if (gameSize == 1)
@@ -140,6 +78,16 @@ namespace Connect_Four
             else
                 return 10;
         }
+        
+        // exits the game
+        private void Exit_click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
 
+        private void MainMenu_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Application.Exit();
+        }
     }
 }

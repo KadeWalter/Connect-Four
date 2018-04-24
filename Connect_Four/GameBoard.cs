@@ -8,6 +8,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Threading;
+using System.IO;
+using System.Diagnostics;
+using System.Timers;
+using System.Runtime.InteropServices;
 
 namespace Connect_Four
 {
@@ -16,8 +20,9 @@ namespace Connect_Four
         public static int ROWS;
         public static int COLS;
         int HEIGHT, WIDTH;
-        int diffOne, diffTwo;
-        int humans;
+        string AIOne, AITwo;
+        int humans = -1;
+        int player_one, player_two; // if player == 1, its human.. if player == 2, its AI
         int winner = -1;      // if winner = 1, red won.. if winner = 2, yellow won.. if winner = 0, it was a draw
         bool winnerFound = false;
         private Rectangle[] columns;
@@ -25,10 +30,13 @@ namespace Connect_Four
         private int turn;     // 1 is red, 2 is yellow
         private int turnCounter = 0;
         private bool InProgress = false;
+        int timeLeft;
+        int timePerMove;
+        Log consoleLog = new Log();
 
         // Gameboard constructor. Takes in the number of humans, AI difficulties, the amount of rows and the amount of columns needed to play the game.
         // Initializes the components of the game, then assigns any values passed in to the corresponding private variables
-        public GameBoard(int humanPlayers, int AIOne_diff, int AITwo_diff, int rows, int cols)
+        public GameBoard(int playerOne, int playerTwo, string AIOne_choice, string AITwo_choice, int rows, int cols, int timer)
         {
             InitializeComponent();
             HEIGHT = this.Height;
@@ -37,11 +45,14 @@ namespace Connect_Four
             COLS = cols;
             this.columns = new Rectangle[cols];
             this.board = new int[rows, cols];
-            diffOne = AIOne_diff;
-            diffTwo = AITwo_diff;
+            AIOne = AIOne_choice;
+            AITwo = AITwo_choice;
+            timePerMove = timer;
+            player_one = playerOne;
+            player_two = playerTwo;
             //red starts
             this.turn = 1;
-            humans = humanPlayers;
+            
         }
 
         // makes the connect 4 game board picture on screen (the start picture)
@@ -78,13 +89,39 @@ namespace Connect_Four
         }
 
         // starts the game. 
-        // If Human V Human or Human V Comp, then the user can now click moves
-        // If Comp V Comp, it starts their game
         private void startGame_click(object sender, EventArgs e)
         {
+            // the comments above the ifs indicate what kind of game structure is being played
+            // note the first player listed is the one who goes first
+            // ie: human v comp, human goes first
             this.InProgress = true;
-            if(humans == 0)
+            // comp v comp game
+            if (player_one == 2 && player_two == 2)
+            {
+                humans = 0;
+                timeLeft = timePerMove;
+                timer1.Start();
                 compVcomp();
+            }
+            // comp v human game
+            else if (player_one == 2)
+            {
+                timeLeft = timePerMove;
+                timer1.Start();
+                AITurn(AIOne);
+            }
+            // human v comp game
+            else if (player_one == 1 && player_two == 2)
+            {
+                timeLeft = timePerMove;
+                timer1.Start();
+            }
+            // human v human game
+            else
+            {
+                timeLeft = timePerMove;
+                timer1.Start();
+            }
         }
 
         // user chooses location to place the piece
@@ -114,9 +151,13 @@ namespace Connect_Four
                     if (winner == -1)
                     {
                         // if its not human v human, its the AI's turn
-                        if (diffOne == 1 || diffOne == 2)
+                        if (AIOne != "")
                         {
-                            AITurn(diffOne);
+                            AITurn(AIOne);
+                        }
+                        else if (AITwo != "")
+                        {
+                            AITurn(AITwo);
                         }
                     }
                 }
@@ -129,11 +170,11 @@ namespace Connect_Four
             while (winner == -1)
             {
                 // AI NUmber 1 turn if there isnt a winner
-                AITurn(diffOne);
+                AITurn(AIOne);
                 // AI Number 2 turn if there isnt a winner
                 if (winner == -1)
                 {
-                    AITurn(diffTwo);
+                    AITurn(AITwo);
                 }
             }
         }
@@ -141,10 +182,16 @@ namespace Connect_Four
         // Human makes their turn
         private void HumanTurn(int row, int column)
         {
+
             // places the piece on the board array
             this.board[row, column] = this.turn;
+            // write it to the log file
+            addToLog(row, column);
             // paints the color
             fillColor(this.turn, row, column);
+            timer1.Stop();
+            timer1.Dispose();
+
             // did the player win?
             winner = this.gameOver(this.turn);
             if (winner != -1)
@@ -160,33 +207,54 @@ namespace Connect_Four
             // if the game is over, return to the main menu
             if (winnerFound == true)
                 backToMainMenu();
+            timeLeft = timePerMove;
+            timer1.Start();
         }
 
         // AI makes its move
-        private void AITurn(int difficulty)
+        private void AITurn(string AIfile)
         {
-            // for random AI
-            if (difficulty == 1)
-            {
-                // adds a sleep timer so the AI moves isnt played with the Human
-                int milliseconds = 500;
-                Thread.Sleep(milliseconds);
-                // AI can go
-                RandomAI r = new RandomAI();
-                r.findMove(board, turn);
-                int rRow = r.getRow();
-                int rCol = r.getCol();
 
-                // places and paints the AI move to the board array
-                this.board[rRow, rCol] = this.turn;
-                // paints the color
-                fillColor(this.turn, rRow, rCol);
-            }
-            // for greedy AI
-            else if (difficulty == 2)
+            // Print the current game board
+            StreamWriter outFile = new StreamWriter("board.txt", false);
+            outFile.WriteLine(turn);
+            outFile.WriteLine(ROWS);
+            outFile.WriteLine(COLS);
+            for (int i = 0; i < ROWS; i++)
             {
-
+                for (int j = 0; j < COLS; j++)
+                {
+                    outFile.WriteLine(board[i, j]);
+                }
             }
+            outFile.Close();
+
+            // Call the AI program and have it execute
+            // All programs must have a gameComm.cs file
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = AIfile;
+            startInfo.Arguments = "gameComm.cs";
+            var p = Process.Start(startInfo);
+            p.WaitForExit();            
+
+            // get the move from the file produced by AI Program
+            StreamReader inFile = new StreamReader("move.txt");
+            string rowString = inFile.ReadLine();
+            string colString = inFile.ReadLine();
+            inFile.Close();
+
+            int aiRow = Convert.ToInt32(rowString);
+            int aiCol = Convert.ToInt32(colString);
+
+            // place the move
+            this.board[aiRow, aiCol] = this.turn;
+            // add to the log file
+            addToLog(aiRow, aiCol);
+            // paints the color
+            fillColor(this.turn, aiRow, aiCol);
+
+            timer1.Dispose();
+            timer1.Stop();
 
             // did the AI win?
             winner = this.gameOver(this.turn);
@@ -201,6 +269,9 @@ namespace Connect_Four
             // once the game is over, go back to the main menu
             if (winnerFound == true)
                 backToMainMenu();
+            timeLeft = timePerMove;
+            timer1.Start();
+
         }
 
         // checks for a winner of the game
@@ -208,6 +279,8 @@ namespace Connect_Four
         {
             if (winner != -1)
             {
+                timer1.Stop();
+                timer1.Dispose();
                 string winnerColor = (winner == 1) ? "Red" : "Yellow";
                 MessageBox.Show("Game over! " + winnerColor + " has won the game.");
                 return true;
@@ -352,21 +425,82 @@ namespace Connect_Four
             Console.Write(lastTurn);
         }
 
+        // adds a move to the log file
+        private void addToLog(int row, int col)
+        {
+            string color;
+            string moveMade;
+            if (turn == 1)
+                color = "red";
+            else
+                color = "yellow";
+            moveMade = "Player " + color + " move: Column = " + col + ", Row = " + row + "\n";
+            consoleLog.addMove(moveMade);
+        }
+
+        private void deleteLog()
+        {
+            consoleLog.clearLog();
+        }
+
+        // timer inforamation
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (timeLeft > 0)
+            {
+                // tick the time down 1
+                timeLeft = timeLeft - 1;
+            }
+            else
+            {
+                string winner;
+                // if time ran out, tell them
+                timer1.Stop();
+                //if the timer ran out, the color not playing right now wins
+                if (turn == 1)
+                    winner = "yellow";
+                else
+                    winner = "red";
+                MessageBox.Show("Time up! Took too long, " + winner + " player wins.");
+                new MainMenu().Show();
+                this.Hide();
+            }
+        }
+
         // after the game is over, return to the main menu
         private void backToMainMenu()
         {
+            timer1.Stop();
+            timer1.Dispose();
+            // delete logFile
+            deleteLog();
             new MainMenu().Show();
             this.Hide();
+        }
+        
+        // shows a log of the past moves
+        private void showLogBtn_Click(object sender, EventArgs e)
+        {
+            consoleLog.Show();
+        }
+
+        private void GameBoard_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            timer1.Stop();
+            timer1.Dispose();
         }
 
         // closes the game form permanently 
         private void GameBoard_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Application.Exit();
+                timer1.Stop();
+                timer1.Dispose();
+                // delete logFile
+                deleteLog();
+                Application.Exit();
         }
-        
-        // displays the console window
-        private void consoleShow_click(object sender, EventArgs e)
+
+        private void GameBoard_Load(object sender, EventArgs e)
         {
 
         }
@@ -374,6 +508,10 @@ namespace Connect_Four
         // returns the user to the main menu
         private void toMainMenu_click(object sender, EventArgs e)
         {
+            timer1.Stop();
+            timer1.Dispose();
+            // delete logFile
+            deleteLog();
             new MainMenu().Show();
             this.Hide();
         }

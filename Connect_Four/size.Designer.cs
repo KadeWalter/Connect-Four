@@ -47,6 +47,7 @@
             this.size_label.TabIndex = 1;
             this.size_label.Text = "Game Size";
             this.size_label.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            this.size_label.Click += new System.EventHandler(this.size_label_Click);
             // 
             // smallSize_button
             // 

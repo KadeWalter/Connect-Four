@@ -45,5 +45,10 @@ namespace Connect_Four
         {
 
         }
+
+        private void size_label_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
